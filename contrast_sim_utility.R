@@ -1,6 +1,8 @@
 
 library(nnet)
 library(RcppNumerical)
+library(AER)
+#library(betareg)
 
 
 
@@ -19,18 +21,28 @@ DGP10 = function(n= 1000 , verbose= TRUE, sample = TRUE){
   P = rbind(p1,p2,p3)
   E = apply(P, MARGIN = 2 , function(x){sample(c(0,1,2),1, replace = T,prob =x )})
   
-  m0 = 10 * X1 +X2 
-  n0 = X1 - 0.1 * X2  
-  Y0 = m0 + rnorm(n, 0, 2)
-  I0 = n0 + rnorm(n, 0, 2) 
-  m1 = 10 * X1 +X2 + 8
-  n1 = -X1 + 1.5 * X2 
-  Y1 = m1 + rnorm(n, 0, 2)
-  I1 = n1 + rnorm(n, 0, 2)
-  m2 = 10 * X1 +X2 + 18
-  n2 = 20 * X1 - X2 + 10
-  Y2 = m2 + rnorm(n, 0, 2)
-  I2 = n2 + rnorm(n, 0, 2) 
+  
+  # add 100 to all m models!
+  m0 = 38 -  10 * X1 - 4 *  X2 #100 +
+  n0 = 20 + 9 * X1 + 3 * X2  
+  Y0 = m0 + rnorm(n, 0, .1) 
+  #Y0[Y0 < quantile(Y0,.8)] <- 0
+  Y0[Y0 < 0] <- 0
+  I0 = n0 + rnorm(n, 0, .1) 
+  
+  m1 = 33.5 -  10 * X1 - 3 *  X2 #100 +
+  n1 = 50 + 6* X1 + 2.4 * X2 
+  Y1 = m1 + rnorm(n, 0, .1)
+  #Y1[Y1 < quantile(Y1,.7)] <- 0
+  Y1[Y1 <0] <- 0
+  I1 = n1 + rnorm(n, 0, .1)
+  
+  m2 = 31 -  21 * X1 - 1.5 *  X2 #100 +
+  n2 = 100 + X1 + 0.9 * X2
+  Y2 = m2 + rnorm(n, 0, .1)
+  #Y2[Y2 < quantile(Y2,.6)] <- 0
+  Y2[Y2 < 0] <- 0
+  I2 = n2 + rnorm(n, 0, .1) 
   
   ecdfI0 = ecdf(I0)
   ecdfI1 = ecdf(I1)
@@ -92,7 +104,7 @@ DGP10 = function(n= 1000 , verbose= TRUE, sample = TRUE){
 
 
 
-sim_one_treatment =function(data,j, realG1, realA1, realB1 ,Right_Y_model = TRUE, Right_E_model = TRUE, Right_I_model = TRUE )  {
+sim_one_treatment =function(data,j, realG1, realA1, realB1 ,Right_Y_model = TRUE, Right_E_model = TRUE, Right_I_model = TRUE, flx = FALSE )  {
   
   X1 = data$X1
   X2 = data$X2
@@ -105,17 +117,51 @@ sim_one_treatment =function(data,j, realG1, realA1, realB1 ,Right_Y_model = TRUE
   n1 = sum(data$E==1)
   n0 = sum(data$E==0)
   ### estimation
+  if(n==1000){
+    n_pr = 8
+    n_ml = 15
+    maxit_y = 1000
+    maxit_e = 100
+  }else{
+    n_pr = 8
+    n_ml = 15
+    maxit_y = 4000
+    maxit_e = 400
+  }
+  
+  
   
   ##Gj
   # TODO works for any number of covariates
   if(!Right_Y_model){
-    m1y = lm('Y~X1+X2', list('Y'=Y[E==j], 'X1'=log(X1[E==j]^2),'X2'=log(X2[E==j]^2) ))
-    m1ya = predict.lm(m1y ,  list( 'X1'=log(X1^2),'X2'=log(X2^2)))
-    m1y1 = predict.lm(m1y ,  list( 'X1'=log(X1[E==j]^2),'X2'=log(X2[E==j]^2)))
+    if(!flx){
+      #m1y = lm('Y~X1+X2', list('Y'=Y[E==j], 'X1'=log(X1[E==j]^2),'X2'=log(X2[E==j]^2) ))
+      #m1ya = predict.lm(m1y ,  list( 'X1'=log(X1^2),'X2'=log(X2^2)))
+      #m1y1 = predict.lm(m1y ,  list( 'X1'=log(X1[E==j]^2),'X2'=log(X2[E==j]^2)))
+      m1y = lm('Y~X1+X2', list('Y'=Y[E==j], 'X1'=X1[E==j],'X2'=X2[E==j] ))
+      m1ya = predict(m1y ,  list( 'X1'=X1,'X2'=X2))
+      m1y1 = predict(m1y ,  list( 'X1'=X1[E==j],'X2'=X2[E==j]))
+      
+    }else{
+      # changed to not transform 'X1'=log(X1[E==j]^2) -> 'X1'=X1[E==j]
+      m1y <- nnet(Y~X1+X2, data = list('Y'= Y[E==j], 'X1'=X1[E==j],'X2'=X2[E==j]), size =n_ml, linout = TRUE, maxit = maxit_y)
+      m1ya <- predict(m1y, newdata = list( 'X1'=X1,'X2'=X2 ))
+      m1y1 <- predict(m1y, newdata = list( 'X1'=X1[E==j],'X2'=X2[E==j] ))
+    }
   }else{
-    m1y = lm('Y~X1+X2', list('Y'= Y[E==j], 'X1'=X1[E==j],'X2'=X2[E==j]))
-    m1ya = predict.lm(m1y ,  list( 'X1'=X1,'X2'=X2))
-    m1y1 = predict.lm(m1y ,  list( 'X1'=X1[E==j],'X2'=X2[E==j]))
+    m1y = tobit(Y~X1+X2,left = 0, data=list('Y'= Y[E==j], 'X1'=X1[E==j],'X2'=X2[E==j]))
+    
+    b <- coef(m1y)
+    sigma <- m1y$scale
+    
+    xba <- model.matrix(~1+X1+X2, list( 'X1'=X1,'X2'=X2)) %*% b
+    xb1 <- model.matrix(~1+X1+X2, list( 'X1'=X1[E==j],'X2'=X2[E==j])) %*% b
+    
+    m1ya <- pnorm(xba / sigma) * xba + sigma * dnorm(xba / sigma)
+    m1y1 <- pnorm(xb1 / sigma) * xb1 + sigma * dnorm(xb1 / sigma)
+    
+    #m1ya = predict(m1y ,  list( 'X1'=X1,'X2'=X2) ,type = "conditional")
+    #m1y1 = predict(m1y ,  list( 'X1'=X1[E==j],'X2'=X2[E==j]))
   }
   
   if(Right_I_model){
@@ -156,7 +202,12 @@ sim_one_treatment =function(data,j, realG1, realA1, realB1 ,Right_Y_model = TRUE
   
   E1 <- relevel(as.factor(E), ref = '0')
   if(!Right_E_model){
-    invisible(capture.output(pro <- multinom('T~X1+X2', list('T'= E1, 'X1'=log(X1^2),'X2'=log(X2^2)))))
+    if(!flx){
+      invisible(capture.output(pro <- multinom('T~X1+X2', list('T'= E1, 'X1'=log(X1^2),'X2'=log(X2^2)))))
+    }else{
+      # changed to not transform
+      invisible(capture.output(pro <- nnet(x = data.frame( 'X1'=X1,'X2'=X2 ), y =class.ind(E1), size =n_pr, softmax = TRUE, maxit = maxit_e)))
+    }
   }else{
     invisible(capture.output(pro <- multinom('T~X1+X2', list('T'= E1, 'X1'=X1,'X2'=X2))))
     
@@ -287,8 +338,7 @@ sim_one_treatment =function(data,j, realG1, realA1, realB1 ,Right_Y_model = TRUE
 }
 
 
-
-simulation_v12 = function(dgp, r = 1000, n = 10000, verbose = FALSE , seed = 13824, Right_Y_model = TRUE, Right_E_model = TRUE, Right_I_model = TRUE, n_param = 1000000){
+simulation_v12 = function(dgp, r = 1000, n = 10000, verbose = FALSE , seed = 13824, Right_Y_model = TRUE, Right_E_model = TRUE, Right_I_model = TRUE, n_param = 1000000, flx = FALSE){
   set.seed(seed)
   #datalist = list()
   
@@ -311,13 +361,13 @@ simulation_v12 = function(dgp, r = 1000, n = 10000, verbose = FALSE , seed = 138
     
     data = dgp(n,verbose=verbose)
     
-    dat0 = sim_one_treatment(data,0 ,realG0, realA0, realB0, Right_Y_model = Right_Y_model, Right_E_model = Right_E_model, Right_I_model = Right_I_model)
+    dat0 = sim_one_treatment(data,0 ,realG0, realA0, realB0, Right_Y_model = Right_Y_model, Right_E_model = Right_E_model, Right_I_model = Right_I_model, flx = flx)
     dat00 = dat0$df
     colnames(dat00) = paste(colnames(dat00), 'E0', sep = '_')
-    dat1 = sim_one_treatment(data,1 ,realG1, realA1, realB1, Right_Y_model = Right_Y_model, Right_E_model = Right_E_model, Right_I_model = Right_I_model)
+    dat1 = sim_one_treatment(data,1 ,realG1, realA1, realB1, Right_Y_model = Right_Y_model, Right_E_model = Right_E_model, Right_I_model = Right_I_model, flx = flx)
     dat11 = dat1$df
     colnames(dat11) = paste(colnames(dat11), 'E1', sep = '_')
-    dat2 = sim_one_treatment(data,2 ,realG2, realA2, realB2, Right_Y_model = Right_Y_model, Right_E_model = Right_E_model, Right_I_model = Right_I_model)
+    dat2 = sim_one_treatment(data,2 ,realG2, realA2, realB2, Right_Y_model = Right_Y_model, Right_E_model = Right_E_model, Right_I_model = Right_I_model, flx = flx)
     dat22 = dat2$df
     colnames(dat22) = paste(colnames(dat22), 'E2', sep = '_')
     VAR = data.frame('var_01' = var(2*(dat1$IF -  dat0$IF))/n , 'var_02' = var(2*(dat2$IF -  dat0$IF))/n )
@@ -380,40 +430,42 @@ print.simulation = function(x){
   print(paste('var est_EQ:',mean(x$var1_E1)))
   print(paste('mc var est_EQ:', var(x$est_EQ_E1)))
   print(paste('coverage_EQ:',sum(x$coverage_EQ_E1)))
-
+  
   print('#####  est12 #####')
   print(paste('est12:', mean(x$est12_E1)))
   print(paste('var est12:',mean(x$var1_E1)))
   print(paste('mc var est12:', var(x$est12_E1)))
   print(paste('coverage12:',sum(x$coverage12_E1)))
-
+  
   print('#####  est_1S #####')
   print(paste('est_1S:', mean(x$est_1S_E1)))
   print(paste('var est_1S:',mean(x$var2_E1)))
   print(paste('mc var est_1S:', var(x$est_1S_E1)))
   print(paste('coverage_1S:',sum(x$coverage_1S_E1)))
-
+  
   print('#####  estA1 #####')
   print(paste('real poi A:',mean(x$realA1_E1)))
   print(paste('est1:', mean(x$estA1_E1)))
   print(paste('var estA:',mean(x$varA_E1)))
   print(paste('mc var estA1:', var(x$estA1_E1)))
   print(paste('coverageA1:',sum(x$coverageA1_E1)))
-
+  
   print('#####  estA2 #####')
   print(paste('real poi A:',mean(x$realA1_E1)))
   print(paste('est2:', mean(x$estA2_E1)))
   print(paste('var estA:',mean(x$varA_E1)))
   print(paste('mc var estA2:', var(x$estA2_E1)))
   print(paste('coverageA2:',sum(x$coverageA2_E1)))
-
+  
   print('#####  estB #####')
   print(paste('real poi B:',mean(x$realB1_E1)))
   print(paste('estB:', mean(x$estB_E1)))
   print(paste('var estB:',mean(x$varB_E1)))
   print(paste('mc var estB:', var(x$estB_E1)))
   print(paste('coverageB:',sum(x$coverageB_E1)))
-
- 
-
+  
+  
+  
 }
+
+# 
