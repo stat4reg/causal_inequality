@@ -409,7 +409,7 @@ sim_one_treatment =function(data,j, realG1, realA1, realB1 ,Right_Y_model = TRUE
 
 
 
-simulation_v12 = function(dgp, r = 1000, n = 10000, verbose = FALSE , seed = 13824, Right_Y_model = TRUE, Right_E_model = TRUE, Right_I_model = TRUE, n_param = 1000000, flx = FALSE , Sample_split = FALSE){
+simulation_v12 = function(dgp, r = 1000, n = 10000, verbose = FALSE , seed = 13824,  n_param = 1000000){
   set.seed(seed)
   #datalist = list()
   
@@ -427,26 +427,47 @@ simulation_v12 = function(dgp, r = 1000, n = 10000, verbose = FALSE , seed = 138
   realB2 = parameters$realB2
   gc()
 
+  ALt = c('11100', '10100', '01100', '00111', '00011')
+  
   fin_data =foreach(i=1:r, .packages=c('nnet','RcppNumerical','AER','caret','randomForest'), .combine=rbind) %dopar% {
     source('./contrast_sim_utility.R', local = TRUE)
     if((i %% 100) == 0 )print(i)
     
     data = dgp(n,verbose=verbose)
     
-    dat0 = sim_one_treatment(data,0 ,realG0, realA0, realB0, Right_Y_model = Right_Y_model, Right_E_model = Right_E_model, Right_I_model = Right_I_model, flx = flx, Sample_split=Sample_split)
-    dat00 = dat0$df
-    colnames(dat00) = paste(colnames(dat00), 'E0', sep = '_')
-    dat1 = sim_one_treatment(data,1 ,realG1, realA1, realB1, Right_Y_model = Right_Y_model, Right_E_model = Right_E_model, Right_I_model = Right_I_model, flx = flx, Sample_split=Sample_split)
-    dat11 = dat1$df
-    colnames(dat11) = paste(colnames(dat11), 'E1', sep = '_')
-    dat2 = sim_one_treatment(data,2 ,realG2, realA2, realB2, Right_Y_model = Right_Y_model, Right_E_model = Right_E_model, Right_I_model = Right_I_model, flx = flx, Sample_split=Sample_split)
-    dat22 = dat2$df
-    colnames(dat22) = paste(colnames(dat22), 'E2', sep = '_')
-    VAR = data.frame('var_01' = var(2*(dat1$IF -  dat0$IF))/n , 'var_02' = var(2*(dat2$IF -  dat0$IF))/n )
-    dat = cbind(dat00,dat11,dat22,VAR)
-    dat$i <- i
-    print(dat00)
-    print(VAR)
+    dat <- data.frame()
+    for (bin in ALt) {
+      vecbin <- strsplit(bin, "")[[1]]
+      Right_Y_model = as.logical(as.integer(vecbin[1]))
+      Right_E_model = as.logical(as.integer(vecbin[2]))
+      Right_I_model = as.logical(as.integer(vecbin[3]))
+      flx = as.logical(as.integer(vecbin[4]))
+      Sample_split=as.logical(as.integer(vecbin[5]))
+      
+      #print(Right_Y_model)
+      #print(Right_E_model)
+      #print(Right_I_model)
+      #print(flx)
+      #print(Sample_split)
+      
+      dat0 = sim_one_treatment(data,0 ,realG0, realA0, realB0, Right_Y_model = Right_Y_model, Right_E_model = Right_E_model, Right_I_model = Right_I_model, flx = flx, Sample_split=Sample_split)
+      dat00 = dat0$df
+      colnames(dat00) = paste(colnames(dat00), 'E0', sep = '_')
+      dat1 = sim_one_treatment(data,1 ,realG1, realA1, realB1, Right_Y_model = Right_Y_model, Right_E_model = Right_E_model, Right_I_model = Right_I_model, flx = flx, Sample_split=Sample_split)
+      dat11 = dat1$df
+      colnames(dat11) = paste(colnames(dat11), 'E1', sep = '_')
+      dat2 = sim_one_treatment(data,2 ,realG2, realA2, realB2, Right_Y_model = Right_Y_model, Right_E_model = Right_E_model, Right_I_model = Right_I_model, flx = flx, Sample_split=Sample_split)
+      dat22 = dat2$df
+      colnames(dat22) = paste(colnames(dat22), 'E2', sep = '_')
+      VAR = data.frame('var_01' = var(2*(dat1$IF -  dat0$IF))/n , 'var_02' = var(2*(dat2$IF -  dat0$IF))/n )
+      datbin = cbind(dat00,dat11,dat22,VAR)
+      datbin$i <- i
+      datbin$ALt <- bin
+      print(dat00)
+      print(VAR)
+      dat <- rbind(dat, datbin)
+    
+    }
     dat
   }
   
