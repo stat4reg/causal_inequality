@@ -28,6 +28,7 @@ The repository includes the following R scripts:
    ```r
    path <- "path/to/save/results/"
    n <- 1000
+   r <- 1000
    ```
    Then run:
    ```r
@@ -35,7 +36,12 @@ The repository includes the following R scripts:
    ```
    The simulation results will be generated and stored in the specified directory.
 
-4. When the simulation has finished, run the post-processing script:  
+4. When the simulation has finished, open the post-processing script and specify the same sample size `n` and the number of replications `r` used in the simulation.
+   ```r
+   n <- 1000
+   r <- 1000
+   ```
+   After setting `n` and `r`, run:
    ```r
    source("post_processing.R")
    ```
