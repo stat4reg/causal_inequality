@@ -23,36 +23,32 @@ The repository includes the following R scripts:
    ```r
    setwd("path/to/your/folder")
    ```
-3. To run the simulation, open the file `Sim_par_job.R`.  
-
-  Inside the script, specify:
+3. To run the simulation, open the file `Sim_par_job.R`.
+   Inside the script, specify:
    ```r
-path <- "path/to/save/results/"
-n <- 1000
+   path <- "path/to/save/results/"
+   n <- 1000
    ```
-
-  Then run:
-  ```r
-source("Sim_par_job.R")
-  ```
-  The simulation results will be generated and stored in the specified directory.
+   Then run:
+   ```r
+   source("Sim_par_job.R")
+   ```
+   The simulation results will be generated and stored in the specified directory.
 
 4. When the simulation has finished, run the post-processing script:  
-  ```r
-source("post_processing.R")
-  ```
+   ```r
+   source("post_processing.R")
+   ```
+   This script creates separate CSV files containing the summarized results for:
+   - G(0)
 
-  This script creates separate CSV files containing the summarized results for:
+   - G(1)
 
-- G(0)
+   - G(2)
 
-- G(1)
+   - and the contrasts between them.
 
-- G(2)
-
-- and the contrasts between them.
-
-  The resulting CSV files correspond to the tables reported in the paper.
+   The resulting CSV files correspond to the tables reported in the paper.
 
 ## Additional notes
 
