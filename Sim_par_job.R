@@ -1,11 +1,8 @@
 source('contrast_sim_utility.R')
 
-
-library(doParallel)
+require(doParallel)
 detectCores()
 registerDoParallel(5)
-
-
 
 n <- 1000
 r <- 1000
