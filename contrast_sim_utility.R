@@ -1,10 +1,8 @@
-
-library(nnet)
-library(RcppNumerical)
-library(AER)
-library(randomForest)
-#library(betareg)
-library(caret)
+require(nnet)
+require(RcppNumerical)
+require(AER)
+require(randomForest)
+require(caret)
 
 
 
@@ -91,13 +89,9 @@ DGP10 = function(n= 1000 , verbose= TRUE, sample = TRUE){
     plot(h1, col = "#00FF0050", add = TRUE)
     plot(h2, col = "#0000FF50", add = TRUE)
   }
+
   
-  
-  
-  
-  
-  
-  if(verbose & sample){
+if(verbose & sample){
     par(mfrow=c(3,1))
     ploteach(p1,E)
     ploteach(p2,E)
