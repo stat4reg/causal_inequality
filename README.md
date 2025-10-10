@@ -19,11 +19,11 @@ The repository includes the following R scripts:
 
 1. Ensure that the files `Sim_par_job.R` and `contrast_sim_utility.R` are located in the **same directory**.
 
-2. Open **R** (or **RStudio**) and set the working directory to the folder containing these files:
+2. Open **R** (or **RStudio**) and set the working directory to the folder containing these files:  
    ```r
    setwd("path/to/your/folder")
    ```
-3. To run the simulation, open the file `Sim_par_job.R`.
+3. To run the simulation, open the file `Sim_par_job.R`.  
 
   Inside the script, specify:
    ```r
@@ -37,7 +37,7 @@ source("Sim_par_job.R")
   ```
   The simulation results will be generated and stored in the specified directory.
 
-4. When the simulation has finished, run the post-processing script:
+4. When the simulation has finished, run the post-processing script:  
   ```r
 source("post_processing.R")
   ```
