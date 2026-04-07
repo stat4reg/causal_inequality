@@ -1,4 +1,7 @@
 source('contrast_sim_utility.R')
+var <- .1
+sd <- sqrt(var)
+beta <- .75
 
 require(doParallel)
 detectCores()
@@ -7,9 +10,9 @@ registerDoParallel(5)
 n <- 1000
 r <- 1000
 FUN <- DGP10
-Path <- paste('res/',n,'NewEQflexNM/', sep = '')
+Path <- paste('res/n',n,'sd',round(sd,digits = 1),'beta',beta,'/', sep = '')
 
-result <- simulation_v12(FUN, n= n,r = r)
+result <- simulation_v12(FUN, n= n,r = r, n_param = 10000000, sd=sd, beta=beta)
 
 result2 <- as.data.frame(result)
 

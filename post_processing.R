@@ -1,6 +1,8 @@
 r <- 1000
-n <- 1000
-Path <- paste('res/',n,'NewEQflexNM/', sep = '')
+n <- 5000
+sd <- 0.3
+beta <-0.75
+Path <- paste('res/n',n,'sd',round(sd, digits = 1),'beta',beta,'/', sep = '')
 
 
 result111= read.csv(paste(Path, 'result11100.csv', sep = ''))
